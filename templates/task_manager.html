@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}
+    タスク管理アプリ
+{% endblock title %}
+
+{% block content %}
+<script>
+    // 「完了済みタスクの表示/非表示」切り替え
+    document.addEventListener('DOMContentLoaded', () => {
+        const toggleButton = document.getElementById('toggle-completed');
+        const completedSection = document.getElementById('completed-tasks-section');
+        
+        // localStorage から過去の表示状態を取得
+        const storedVisibility = localStorage.getItem('completedVisibility');
+
+        if (storedVisibility === 'shown') {
+            // 'shown' を表示に切り替え
+            completedSection.style.display = 'block';
+        } else {
+            // 初回 or 'hidden' を非表示に切り替え
+            completedSection.style.display = 'none';
+        }
+
+        // ボタンで表示をトグルし、localStorage に保存
+        toggleButton.addEventListener('click', () => {
+            if (completedSection.style.display === 'none') {
+                // 非表示状態なら表示
+                completedSection.style.display = 'block';
+                localStorage.setItem('completedVisibility', 'shown');
+            } else {
+                // 表示状態なら非表示
+                completedSection.style.display = 'none';
+                localStorage.setItem('completedVisibility', 'hidden');
+            }
+        });
+    });
+</script>
+
+<h1>タスク管理アプリ</h1>
+<form method="POST">
+    <label>タスク名:</label>
+    <input type="text" name="task_name" required><br>
+    <label>詳細:</label>
+    <textarea name="task_details"></textarea><br>
+    <label>期限日:</label>
+    <input type="date" name="due_date" maxlength="10" placeholder="yyyy/mm/dd"><br>
+    <label>優先度:</label>
+    <select name="priority">
+        <option value="低">低</option>
+        <option value="中">中</option>
+        <option value="高">高</option>
+    </select><br>
+    <label>カテゴリ:</label>
+    <select name="category" id="category-select">
+        <option value="">-- 既存のカテゴリを選択 --</option>
+        {% for category in categories %}
+            <option value="{{ category }}">{{ category }}</option>
+        {% endfor %}
+    </select>
+    <br>
+    <label>または新しいカテゴリを作成:</label>
+    <input type="text" name="new_category" id="new-category-input">
+    <br>
+    <label>タグ (カンマ区切り):</label>
+    <input type="text" name="tags" placeholder="例: タグ1, タグ2"><br>
+    <button type="submit">追加</button>
+</form>
+
+<!-- 未完了タスク用のフィルタリングフォーム -->
+<h2>未完了タスク</h2>
+<form method="GET" action="/task_manager">
+    <label>優先度:</label>
+    <select name="incomplete_filter_priority">
+        <option value="">-- 全て --</option>
+        <option value="低" {% if incomplete_filter_priority == "低" %}selected{% endif %}>低</option>
+        <option value="中" {% if incomplete_filter_priority == "中" %}selected{% endif %}>中</option>
+        <option value="高" {% if incomplete_filter_priority == "高" %}selected{% endif %}>高</option>
+    </select>
+
+    <label>カテゴリ:</label>
+    <select name="incomplete_filter_category">
+        <option value="">-- 全て --</option>
+        {% for category in categories %}
+            <option value="{{ category }}" {% if incomplete_filter_category == category %}selected{% endif %}>
+                {{ category }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <label>タグ:</label>
+    <select name="incomplete_filter_tag">
+        <option value="">-- 全て --</option>
+        {% for tag in tags %}
+            <option value="{{ tag[1] }}" {% if incomplete_filter_tag == tag[1] %}selected{% endif %}>
+                {{ tag[1] }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <button type="submit">フィルタ</button>
+</form>
+
+<ul>
+    {% if incomplete_tasks and incomplete_tasks|length > 0 %}
+        {% for task in incomplete_tasks %}
+            <li>
+                <!-- 優先度に基づいてクラスを割り当て -->
+                <strong class="priority-{{ task[4]|lower }}">{{ task[1] }}</strong> ({{ task[4] }}) - {{ task[3] }}<br>
+                {{ task[2] }}<br>
+                カテゴリ: {{ task[5] }}<br>
+                タグ: {{ task_tags_map[task[0]] | join(", ") }}<br>
+
+                <span style="color: blue;">ステータス: {{ task[7] }}</span>
+
+                <form method="GET" action="/edit_task/{{ task[0] }}" style="display: inline;">
+                    <button type="submit">編集</button>
+                </form>
+
+                <form method="POST" style="display: inline;">
+                    <input type="hidden" name="delete_id" value="{{ task[0] }}">
+                    <button type="submit" onclick="return confirm('タスクを削除しますか？')">削除</button>
+                </form>
+
+                <form method="POST" style="display: inline;">
+                    <input type="hidden" name="complete_id" value="{{ task[0] }}">
+                    <button type="submit">完了済みにする</button>
+                </form>
+            </li>
+        {% endfor %}
+    {% else %}
+        <li>現在、未完了タスクはありません。</li>
+    {% endif %}
+</ul>
+
+<!-- 完了済みタスク用のフィルタリングフォーム -->
+<h2>完了済みタスク</h2>
+<form method="GET" action="/task_manager">
+    <label>優先度:</label>
+    <select name="complete_filter_priority">
+        <option value="">-- 全て --</option>
+        <option value="低" {% if complete_filter_priority == "低" %}selected{% endif %}>低</option>
+        <option value="中" {% if complete_filter_priority == "中" %}selected{% endif %}>中</option>
+        <option value="高" {% if complete_filter_priority == "高" %}selected{% endif %}>高</option>
+    </select>
+
+    <label>カテゴリ:</label>
+    <select name="complete_filter_category">
+        <option value="">-- 全て --</option>
+        {% for category in categories %}
+            <option value="{{ category }}" {% if complete_filter_category == category %}selected{% endif %}>
+                {{ category }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <label>タグ:</label>
+    <select name="complete_filter_tag">
+        <option value="">-- 全て --</option>
+        {% for tag in tags %}
+            <option value="{{ tag[1] }}" {% if complete_filter_tag == tag[1] %}selected{% endif %}>
+                {{ tag[1] }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <button type="submit">フィルタ</button>
+</form>
+
+<button id="toggle-completed">完了済みタスクの表示/非表示</button>
+<div id="completed-tasks-section" style="display: none;">
+    <ul>
+        {% if completed_tasks and completed_tasks|length > 0 %}
+            {% for task in completed_tasks %}
+                <li>
+                    <strong class="priority-{{ task[4]|lower }}">{{ task[1] }}</strong> ({{ task[4] }}) - {{ task[3] }}<br>
+                    {{ task[2] }}<br>
+                    カテゴリ: {{ task[5] }}<br>
+                    タグ: {{ task_tags_map[task[0]] | join(", ") }}<br>
+
+                    <span style="color: blue;">ステータス: {{ task[7] }}</span>
+                    
+                    
+                    <form method="GET" action="/edit_task/{{ task[0] }}" style="display: inline;">
+                        <button type="submit">編集</button>
+                    </form>
+
+                    <form method="POST" style="display: inline;">
+                        <input type="hidden" name="delete_id" value="{{ task[0] }}">
+                        <button type="submit" onclick="return confirm('タスクを削除しますか？')">削除</button>
+                    </form>
+
+                    <form method="POST" style="display: inline;">
+                        <input type="hidden" name="incomplete_id" value="{{ task[0] }}">
+                        <button type="submit">未完了に戻す</button>
+                    </form>
+                </li>
+            {% endfor %}
+        {% else %}
+            <li>現在、完了済みタスクはありません。</li>
+        {% endif %}
+    </ul>
+</div>
+{% endblock content %}

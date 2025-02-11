@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Multi-Purpose App
+{% endblock title %}
+
+{% block content %}
+    <h1>Appマネージャー</h1>
+    <p>使用したい機能を選択してください:</p>
+    <ul>
+        <li><a href="/task_manager">タスク管理アプリ</a></li>
+        <!-- 他の機能のリンクをここに追加 -->
+    </ul>
+{% endblock content %}
+
+{% block footer %}
+<!-- 何も書かないことで、base.html に定義されたフッターを上書きし、非表示にする -->
+{% endblock footer %}

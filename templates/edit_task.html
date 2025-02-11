@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>タスク編集</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>タスク編集</h1>
+    <form method="POST">
+        <label>タスク名:</label>
+        <input type="text" name="task_name" value="{{ task[1] }}" required><br>
+
+        <label>詳細:</label>
+        <textarea name="task_details">{{ task[2] }}</textarea><br>
+
+        <label>期限日:</label>
+        <input type="date" name="due_date" value="{{ task[3]|replace('/', '-') }}"><br>
+
+        <label>優先度:</label>
+        <select name="priority">
+            <option value="低" {% if task[4] == "低" %}selected{% endif %}>低</option>
+            <option value="中" {% if task[4] == "中" %}selected{% endif %}>中</option>
+            <option value="高" {% if task[4] == "高" %}selected{% endif %}>高</option>
+        </select><br>
+
+        <label>カテゴリ:</label>
+        <select name="category">
+            {% for category in categories %}
+                <option value="{{ category }}" {% if task[5] == category %}selected{% endif %}>{{ category }}</option>
+            {% endfor %}
+        </select><br>
+
+        <label>タグ (カンマ区切り):</label>
+        <input type="text" name="tags" value="{{ task[6] }}"><br>
+
+        <label>ステータス:</label>
+        <select id="status-select" name="status" onchange="toggleCustomStatus()">
+            <!-- task[7] が既存ステータスのいずれかに一致すれば selected -->
+            <option value="未着手" {% if task[7] == "未着手" %}selected{% endif %}>未着手</option>
+            <option value="進行中" {% if task[7] == "進行中" %}selected{% endif %}>進行中</option>
+            <option value="レビュー待ち" {% if task[7] == "レビュー待ち" %}selected{% endif %}>レビュー待ち</option>
+            <option value="保留" {% if task[7] == "保留" %}selected{% endif %}>保留</option>
+            <option value="完了済み" {% if task[7] == "完了済み" %}selected{% endif %}>完了済み</option>
+            <!-- カスタムステータスという選択肢を用意 -->
+            <option value="カスタムステータス"
+                {% if task[7] not in ["未着手","進行中","レビュー待ち","保留","完了済み"] %}
+                    selected
+                {% endif %}
+            >カスタムステータス</option>
+        </select>
+        <br>
+        <!-- カスタムステータス入力欄 -->
+        <input type="text" id="custom_status" name="custom_status"
+            placeholder="任意のステータス" 
+            value="{% if task[7] not in ['未着手','進行中','レビュー待ち','保留','完了済み'] %}{{ task[7] }}{% endif %}">
+        <br><br>
+
+        <button type="submit">保存</button>
+    </form>
+    <a href="/task_manager">キャンセル</a>
+
+    <script>
+        function toggleCustomStatus() {
+            var statusSelect = document.getElementById("status-select");
+            var customStatusInput = document.getElementById("custom_status");
+
+            if (statusSelect.value === "カスタムステータス") {
+            customStatusInput.style.display = "inline";
+            } else {
+                customStatusInput.style.display = "none";
+                customStatusInput.value = "";
+            }
+        }
+        // 初期表示の状態を設定
+        window.onload = toggleCustomStatus;
+    </script>
+</body>
+</html>

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Flask App{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <h1>Multi-Uni App</h1>
+    </header>
+    
+    <main>
+        {% block content %}
+        <!-- ページ固有の内容がここに入る -->
+        {% endblock %}
+    </main>
+    
+    <footer>
+        <br>
+        {% if request.path != '/' %}
+            <a href="/">ホームに戻る</a>
+        {% endif %}
+    </footer>
+</body>
+</html>
